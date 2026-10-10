@@ -110,7 +110,7 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
 .check { display: flex; align-items: center; gap: 8px; font-size: 15px; }
 .check input { width: 20px; height: 20px; accent-color: var(--ink); }
 @media print {
-  nav, .no-print, #step1, #step2, #manage, #backup, #history { display: none !important; }
+  nav, .no-print, #step1, #step2, #manage, #items, #backup, #history { display: none !important; }
   body { background-image: none; font-size: 14px; }
   main { padding: 0 0 0 4px; max-width: none; }
   main::before { display: none; }
@@ -122,6 +122,22 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
   .rm, .have-btn { display: none; }
   .row input:checked + span { text-decoration: none; color: inherit; }
 }
+
+.cg { display: inline-flex; align-items: stretch; border-radius: 10px; overflow: hidden; background: var(--chip); color: var(--text); }
+.cg.on { background: var(--chip-on); color: var(--chip-on-text); }
+.cg.via { background: var(--via); }
+.cg.home { opacity: .55; }
+.cmain { font: inherit; color: inherit; background: transparent; border: 0; padding: 7px 12px; min-height: 40px; cursor: pointer; text-align: left; }
+.cmain small { opacity: .8; font-size: 12px; margin-left: 6px; font-weight: 700; }
+.stp { font: inherit; font-weight: 700; color: inherit; background: transparent; border: 0; border-left: 1px solid rgba(127,127,160,.35); min-width: 36px; cursor: pointer; }
+.stp[aria-disabled="true"], .stp2[aria-disabled="true"] { opacity: .35; }
+.qctl { display: inline-flex; align-items: center; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--paper); flex: none; }
+.stp2 { font: inherit; font-weight: 700; border: 0; background: var(--paper); color: var(--ink); width: 32px; height: 34px; cursor: pointer; }
+.qn { min-width: 32px; text-align: center; font-size: 14px; color: var(--ink); }
+.erow, .irow { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+.irow input[type=text] { flex: 1; min-width: 130px; font: inherit; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--rule); background: var(--paper); color: var(--text); }
+.irow select { font: inherit; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--rule); background: var(--paper); color: var(--text); max-width: 190px; }
+@media print { .stp2 { display: none; } }
 </style>
 </head>
 <body>
@@ -130,6 +146,7 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
   <a href="#step2">2. Vaste basis</a>
   <a href="#step3">3. Lijst</a>
   <a href="#manage">Gerechten</a>
+  <a href="#items">Ingrediënten</a>
   <a href="#backup">Back-up</a>
   <a href="#history">Vorige weken</a>
 </nav>
@@ -144,14 +161,19 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
       <input type="date" id="date">
     </div>
     <div class="plan" id="plan"></div>
+    <div class="bar">
+      <button class="btn" id="shareMenu">Menu delen</button>
+      <button class="btn ghost" id="copyMenu">Menu kopiëren</button>
+    </div>
+    <div class="msg" id="mmsg" role="status"></div>
   </section>
 
   <section id="step2">
     <h2>2. Vaste basis</h2>
-    <p class="hint">Tik aan wat je deze week nodig hebt. Lichtblauw = zit al in een gerecht dat je koos.</p>
+    <p class="hint">Tik aan wat je deze week nodig hebt. Komt iets in meerdere gerechten voor, dan zie je meteen het totaal (bv. ×2). Met − en + stel je het aantal in.</p>
     <div id="base"></div>
     <h3>Product toevoegen</h3>
-    <p class="hint">Staat iets er niet bij? Voeg het hier toe. Het wordt meteen aangevinkt en blijft daarna in de lijst staan.</p>
+    <p class="hint">Staat iets er niet bij? Voeg het hier toe. Het wordt meteen aangevinkt en staat daarna in je ingrediëntenlijst.</p>
     <div class="addrow">
       <input id="np" type="text" list="allitems" placeholder="bv. strooikaas" aria-label="Nieuw product" autocomplete="off">
       <select id="npc" aria-label="Afdeling voor nieuw product" hidden></select>
@@ -164,7 +186,7 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
     <h2 id="weektitle">3. Lijst</h2>
     <div class="overview" id="overview"></div>
     <h3>Winkellijst</h3>
-    <p class="hint no-print">Vink af in de winkel. Heb je iets nog in huis, tik dan op "thuis". Het knopje met × is het aantal.</p>
+    <p class="hint no-print">Vink af in de winkel. Heb je iets nog in huis, tik dan op "thuis". Met − en + pas je het aantal aan.</p>
     <div class="addrow no-print">
       <input id="extra" type="text" placeholder="Extra, bv. toiletpapier" aria-label="Extra product toevoegen">
       <button class="btn" id="addExtra">Toevoegen</button>
@@ -186,18 +208,27 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
 
   <section id="manage">
     <h2>Gerechten</h2>
-    <p class="hint">Tik een gerecht aan om de ingrediënten aan te passen, of maak een nieuw gerecht.</p>
+    <p class="hint">Tik een gerecht aan om de ingrediënten en aantallen aan te passen, of maak een nieuw gerecht.</p>
     <div class="chips" id="dishchips"></div>
     <div id="editor"></div>
-    <h3>Eigen producten</h3>
-    <p class="hint">Producten die je zelf toevoegde. Je kan de afdeling wijzigen, zodat ze op de juiste plek in de winkellijst staan.</p>
-    <div id="customlist"></div>
     <datalist id="allitems"></datalist>
+  </section>
+
+  <section id="items">
+    <h2>Ingrediënten</h2>
+    <p class="hint">Alle producten die je kan kiezen, per afdeling. Pas de naam of de afdeling aan, of verwijder wat je nooit koopt. Wijzigingen werken meteen door in je gerechten.</p>
+    <div class="addrow">
+      <input id="inew" type="text" placeholder="Nieuw ingrediënt" aria-label="Nieuw ingrediënt" autocomplete="off">
+      <select id="icat" aria-label="Afdeling voor nieuw ingrediënt"></select>
+      <button class="btn" id="iadd">Toevoegen</button>
+    </div>
+    <div class="msg" id="imsg" role="status"></div>
+    <div id="itemlist"></div>
   </section>
 
   <section id="backup">
     <h2>Back-up</h2>
-    <p class="hint">Bewaart je gerechten en vorige weken als tekst. Plak die ergens veilig, bijvoorbeeld in een WhatsApp aan jezelf. Met "Herstellen" zet je ze terug.</p>
+    <p class="hint">Bewaart je gerechten, ingrediënten en vorige weken als tekst. Plak die ergens veilig, bijvoorbeeld in een WhatsApp aan jezelf. Met "Herstellen" zet je ze terug.</p>
     <textarea id="bk" aria-label="Back-up tekst" placeholder="Hier verschijnt je back-up, of plak hier een back-up om te herstellen."></textarea>
     <div class="bar">
       <button class="btn" id="bmake">Back-up maken en kopiëren</button>
@@ -212,11 +243,10 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
     <div id="histlist"></div>
   </section>
 </main>
-
 <script>
 const DAYS = ["Zaterdag","Zondag","Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag"];
 
-// Winkelvolgorde: zo staat het ook op je papieren lijstjes.
+// Winkelvolgorde van de afdelingen, en de ingrediënten waarmee je start.
 const BASE_CATS = [
   ["Fruit", ["bananen","appels","kiwi's","blauwe bessen","druiven","peren","appelsienen","mandarijnen","aardbeien","nectarines"]],
   ["Groenten", ["broccoli","bloemkool","boontjes","wortels","tomaten","cherrytomaatjes","komkommer","paprika","avocado","sla","courgette","aubergine","champignons","ajuin","aardappelen","spinazie","witloof"]],
@@ -226,77 +256,108 @@ const BASE_CATS = [
   ["Kaas & zuivel", ["melk","kaas","kinderkaas","geitenkaas","parmezaan","mozzarella","room","yoghurt","yoghurtjes","yoghurtdrink"]],
   ["Snacks & rest", ["koekjes","nootjes","chocolade","chips","wijn"]]
 ];
+const CAT_NAMES = BASE_CATS.map(c => c[0]);
 const SEASONAL = new Set(["druiven","peren","appelsienen","mandarijnen","aardbeien","nectarines"]);
 
-// Startgerechten. Alles hieronder kan je in de pagina zelf aanpassen.
+// Startgerechten (jouw laatste versie). Alles kan je in de pagina zelf nog aanpassen.
 const DEFAULT_DISHES = [
-  ["Zalm", ["zalm","aardappelen","wortels","boontjes","broccoli","melk"]],
-  ["Kip met rijst", ["kipfilet","rijst","bloemkool","boontjes"]],
-  ["Frietjes & hamburgers", ["frietjes","hamburgers","fishburgers","hamburgerbroodjes","sla","tomaten"]],
-  ["Wraps", ["wraps","paprika","sla","tomaten","kaas"]],
-  ["Pasta pesto & kip", ["pasta","pestosaus","kipfilet","cherrytomaatjes","parmezaan"]],
-  ["Pasta carbonara", ["pasta","ham","room","parmezaan","eieren"]],
-  ["Quiche met sla", ["bladerdeeg","eieren","room","kaas","sla"]],
-  ["Ster", ["bladerdeeg","broccoli","kinderkaas","kipgehakt"]],
-  ["Bloemkool, patatjes & witte vis", ["bloemkool","aardappelen","witte vis","melk"]],
-  ["Bloemkool, patatjes & worst", ["bloemkool","aardappelen","worst","melk"]],
-  ["Pizza", ["pizzadeeg","mozzarella","tomaten","paprika"]],
-  ["Couscous", ["couscous","courgette","paprika","tomaten"]],
-  ["Vol-au-vent", ["vidé","kipfilet","champignons","room","rijst"]],
-  ["Koude schotel", ["ham","eieren","tomaten","komkommer","sla","aardappelen"]],
-  ["Frittata", ["eieren","aardappelen","courgette","paprika","kaas"]],
-  ["Soep", ["wortels","aardappelen","ajuin","stokbrood"]]
-].map((d, i) => ({ id: "d" + (i + 1), name: d[0], ing: d[1].slice() }));
-const OTHER = ["Restjes", "Uit eten of afhaal"];
+  {"id": "d1", "name": "Zalm met pasta en bootjes", "ing": ["zalm", "boontjes", "strooikaas", "pasta"]},
+  {"id": "d2", "name": "Kip met rijst en bloemkool", "ing": ["kipfilet", "rijst", "bloemkool"]},
+  {"id": "d3", "name": "Frietjes & hamburgers", "ing": ["frietjes", "fishburgers", "hamburgerbroodjes", "sla", "tomaten", "avocado", "komkommer"]},
+  {"id": "d4", "name": "Wraps", "ing": ["wraps", "paprika", "sla", "tomaten", "zure room", "kipgehakt", "zwarte bonen"]},
+  {"id": "d5", "name": "Pasta pesto & kip", "ing": ["pasta", "pestosaus", "kipfilet", "cherrytomaatjes", "parmezaan"]},
+  {"id": "d6", "name": "Pasta carbonara met broccoli", "ing": ["pasta", "parmezaan", "eieren", "spekjes", "broccoli"]},
+  {"id": "d7", "name": "Quiche met sla", "ing": ["bladerdeeg", "eieren", "room", "kaas", "sla", "tomaten", "gerookte zalm", "geitenkaas"]},
+  {"id": "d8", "name": "Ster", "ing": ["bladerdeeg", "broccoli", "kipgehakt", "kruidenkaas"]},
+  {"id": "d9", "name": "Bloemkool, patatjes & witte vis", "ing": ["bloemkool", "aardappelen", "witte vis"]},
+  {"id": "d10", "name": "Bloemkool, patatjes & worst", "ing": ["bloemkool", "aardappelen", "worst"]},
+  {"id": "d11", "name": "Pizza", "ing": ["pizzadeeg", "mozzarella", "tomatenconcentraat", "aubergine", "courgette"]},
+  {"id": "d12", "name": "Couscous met koude groentjes en worst", "ing": ["couscous", "paprika", "cherrytomaatjes", "witte kaas", "komkommer", "worst"]},
+  {"id": "d13", "name": "Vol-au-vent", "ing": ["vidé", "videkoekjes", "broccoli"]},
+  {"id": "d14", "name": "Koude schotel", "ing": ["ham", "eieren", "tomaten", "komkommer", "sla", "aardappelen", "gerookte zalm", "gedroogde vis", "boontjes"]}
+];
+const DEFAULT_CUSTOM = {"strooikaas": "Kaas & zuivel", "zure room": "Kaas & zuivel", "zwarte bonen": "Pasta, rijst & kast", "spekjes": "Vlees & vis", "kruidenkaas": "Kaas & zuivel", "tomatenconcentraat": "Pasta, rijst & kast", "witte kaas": "Kaas & zuivel", "videkoekjes": "Pasta, rijst & kast", "gedroogde vis": "Vlees & vis"};
+const DEFAULT_HISTORY = [{"date": "2026-10-10", "plan": {"Zaterdag": "Koude schotel", "Zondag": "Frietjes & hamburgers", "Maandag": "Zalm met pasta en bootjes", "Dinsdag": "Pizza", "Woensdag": "Uit eten of afhaal", "Donderdag": "Bloemkool, patatjes & witte vis", "Vrijdag": "Uit eten of afhaal"}}];
+const OTHER = ["Oma kookt", "Restjes", "Uit eten of afhaal"];
 
 // Wat er altijd bij komt: staat het ene op de lijst, dan het andere ook.
 const COMPANIONS = { "fishburgers": ["avocado"] };
-const withCompanions = set => { [...set].forEach(i => (COMPANIONS[i] || []).forEach(c => set.add(c))); return set; };
 
-const KEY = "boodschappen-v3", OLD = "boodschappen-v2";
+const KEY = "boodschappen-v3";
+const clone = x => JSON.parse(JSON.stringify(x));
 const todayISO = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
-let S = { dishes: null, custom: {}, plan: {}, base: {}, qty: {}, done: {}, have: {}, extras: [], date: "", history: [] };
+let S = { dishes: null, items: null, custom: {}, plan: {}, base: {}, qty: {}, adj: {}, done: {}, have: {}, extras: [], date: "", history: [] };
 try {
   const raw = localStorage.getItem(KEY);
-  if (raw) { S = Object.assign(S, JSON.parse(raw)); }
-  else {
-    const old = localStorage.getItem(OLD);
-    if (old) {
-      const o = JSON.parse(old);
-      const plan = {};
-      Object.entries(o.plan || {}).forEach(([day, name]) => {
-        const d = DEFAULT_DISHES.find(x => x.name === name || (x.name === "Quiche met sla" && name === "Quiche met sla"));
-        if (d) plan[day] = d.id; else if (OTHER.includes(name)) plan[day] = "o:" + name;
-      });
-      S = Object.assign(S, o, { plan });
-    }
-  }
+  if (raw) S = Object.assign(S, JSON.parse(raw));
 } catch (e) {}
-if (!Array.isArray(S.dishes)) S.dishes = JSON.parse(JSON.stringify(DEFAULT_DISHES));
+if (!Array.isArray(S.dishes)) {
+  S.dishes = clone(DEFAULT_DISHES);
+  if (!Object.keys(S.custom || {}).length) S.custom = clone(DEFAULT_CUSTOM);
+  if (!S.history.length) S.history = clone(DEFAULT_HISTORY);
+}
+// Algemene ingrediëntenlijst: begin met de standaardlijst plus je eigen producten.
+if (!S.items || typeof S.items !== "object") {
+  S.items = {};
+  BASE_CATS.forEach(([c, arr]) => arr.forEach(i => { S.items[i] = c; }));
+  Object.assign(S.items, S.custom || {});
+}
+delete S.custom;
+S.adj = S.adj || {};
+S.dishes.forEach(d => d.ing.forEach(i => { if (!(i in S.items)) S.items[i] = "Snacks & rest"; }));
 if (!S.date) S.date = todayISO();
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
 let editing = null;
+const openCats = new Set();
+const nlSort = (a, b) => a.localeCompare(b, "nl");
 const fmtDate = iso => { try { return new Date(iso + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "long" }); } catch (e) { return iso; } };
 const dishById = id => S.dishes.find(d => d.id === id);
+const dq = (d, i) => (d.qty && d.qty[i]) || 1;
 const planLabel = v => !v ? "" : v.startsWith("o:") ? v.slice(2) : (dishById(v) ? dishById(v).name : "");
-const nlSort = (a, b) => a.localeCompare(b, "nl");
-const catItems = cat => [...BASE_CATS.find(c => c[0] === cat)[1], ...Object.keys(S.custom).filter(k => S.custom[k] === cat)].sort(nlSort);
-const catNames = () => BASE_CATS.map(c => c[0]);
-const allItems = () => catNames().flatMap(catItems);
-const fromDish = () => {
-  const set = new Set();
-  Object.values(S.plan).forEach(v => { const d = dishById(v); if (d) d.ing.forEach(i => set.add(i)); });
-  return withCompanions(set);
-};
-const wantedAll = () => withCompanions(new Set([...fromDish(), ...Object.keys(S.base)]));
+const catItems = cat => Object.keys(S.items).filter(k => S.items[k] === cat).sort(nlSort);
 const el = (tag, attrs = {}, kids = []) => {
   const n = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => k === "text" ? n.textContent = v : n.setAttribute(k, v));
   kids.forEach(k => n.append(k));
   return n;
 };
-const qtyOf = k => S.qty[k] || 1;
+const say = (id, msg) => { document.getElementById(id).textContent = msg; };
+
+// Wat heb je deze week nodig, en hoeveel? Telt op over alle dagen en gerechten.
+function needs() {
+  const dishTot = {};
+  Object.values(S.plan).forEach(v => {
+    const d = dishById(v); if (!d) return;
+    d.ing.forEach(i => { dishTot[i] = (dishTot[i] || 0) + dq(d, i); });
+  });
+  const names = new Set([...Object.keys(dishTot), ...Object.keys(S.base)]);
+  const comp = new Set();
+  [...names].forEach(i => (COMPANIONS[i] || []).forEach(c => { names.add(c); comp.add(c); }));
+  const out = {};
+  names.forEach(i => {
+    if (!(i in S.items)) return;
+    const t = Math.max(dishTot[i] || 0, S.base[i] ? 1 : 0, comp.has(i) ? 1 : 0);
+    out[i] = { dish: dishTot[i] || 0, manual: !!S.base[i], total: Math.max(1, t + (S.adj[i] || 0)) };
+  });
+  return out;
+}
+const canMinus = n => n.total > 1 || (n.manual && !n.dish);
+function bump(name, delta) {
+  const n = needs()[name]; if (!n) return;
+  if (delta > 0) S.adj[name] = (S.adj[name] || 0) + 1;
+  else if (n.total > 1) S.adj[name] = (S.adj[name] || 0) - 1;
+  else if (n.manual && !n.dish) { delete S.base[name]; delete S.adj[name]; }
+  else return;
+  save(); renderBase(); renderList();
+}
+function qctl(name, n, cls) {
+  const minus = el("button", { class: cls, "aria-label": "Minder " + name, "aria-disabled": String(!canMinus(n)), text: "−" });
+  const plus = el("button", { class: cls, "aria-label": "Meer " + name, text: "+" });
+  minus.onclick = () => bump(name, -1);
+  plus.onclick = () => bump(name, 1);
+  return [minus, plus];
+}
 
 function renderPlan() {
   const box = document.getElementById("plan"); box.replaceChildren();
@@ -316,26 +377,30 @@ function renderPlan() {
 
 function renderBase() {
   const box = document.getElementById("base"); box.replaceChildren();
-  const via = fromDish();
-  catNames().forEach(cat => {
+  const N = needs();
+  CAT_NAMES.forEach(cat => {
     box.append(el("div", { class: "cat", text: cat }));
     const wrap = el("div", { class: "chips" });
     catItems(cat).forEach(i => {
-      const manual = !!S.base[i];
-      const isVia = via.has(i);
-      const b = el("button", { class: "chip" + (isVia ? " via" : ""), "aria-pressed": manual || isVia }, [document.createTextNode(i)]);
-      if (S.have[i] && (manual || isVia)) b.append(el("small", { text: "thuis" }));
-      else if (SEASONAL.has(i)) b.append(el("small", { text: "seizoen" }));
-      b.onclick = () => { if (manual) delete S.base[i]; else S.base[i] = true; delete S.have[i]; save(); renderBase(); renderList(); };
-      wrap.append(b);
+      const n = N[i], active = !!n, manual = !!S.base[i], home = active && !!S.have[i];
+      const g = el("div", { class: "cg" + (active ? (manual ? " on" : " via") : "") + (home ? " home" : "") });
+      const b = el("button", { class: "cmain", "aria-pressed": String(active) }, [document.createTextNode(i)]);
+      if (home) b.append(el("small", { text: "thuis" }));
+      else if (active && n.total > 1) b.append(el("small", { text: "×" + n.total }));
+      else if (!active && SEASONAL.has(i)) b.append(el("small", { text: "seizoen" }));
+      b.onclick = () => {
+        if (manual) { delete S.base[i]; if (!(n && n.dish)) delete S.adj[i]; }
+        else { S.base[i] = true; delete S.have[i]; }
+        save(); renderBase(); renderList();
+      };
+      g.append(b);
+      if (active && !home) qctl(i, n, "stp").forEach(x => g.append(x));
+      wrap.append(g);
     });
     box.append(wrap);
   });
 }
 
-function overviewRows(plan, labelFn) {
-  return DAYS.filter(d => plan[d]).map(d => [d, labelFn(plan[d])]);
-}
 function renderOverview() {
   document.getElementById("weektitle").textContent = "Week van " + fmtDate(S.date);
   const box = document.getElementById("overview"); box.replaceChildren();
@@ -345,16 +410,14 @@ function renderOverview() {
 
 function renderList() {
   const box = document.getElementById("list"); box.replaceChildren();
-  const all = wantedAll();
-  const wanted = [...all].filter(i => !S.have[i]);
-  const wset = new Set(wanted);
+  const N = needs();
   let any = false;
-  catNames().forEach(cat => {
-    const picked = catItems(cat).filter(i => wset.has(i));
+  CAT_NAMES.forEach(cat => {
+    const picked = catItems(cat).filter(i => N[i] && !S.have[i]);
     if (!picked.length) return;
     any = true;
     const g = el("div", { class: "list-cat" }, [el("div", { class: "cat", text: cat })]);
-    picked.forEach(i => g.append(row(i, false)));
+    picked.forEach(i => g.append(row(i, false, 0, N[i])));
     box.append(g);
   });
   if (S.extras.length) {
@@ -366,7 +429,7 @@ function renderList() {
   if (!any) box.append(el("p", { class: "empty", text: "Nog niets gekozen. Begin bij stap 1 of 2." }));
 
   const hb = document.getElementById("havebox"); hb.replaceChildren();
-  const home = [...all].filter(i => S.have[i]);
+  const home = Object.keys(N).filter(i => S.have[i]).sort(nlSort);
   if (home.length) {
     const d = el("details", {}, [el("summary", { text: "Heb ik thuis (" + home.length + ")" })]);
     home.forEach(i => {
@@ -378,21 +441,22 @@ function renderList() {
   }
 }
 
-function row(name, isExtra, idx) {
+function row(name, isExtra, idx, n) {
   const k = isExtra ? "x:" + name : name;
   const cb = el("input", { type: "checkbox" });
   cb.checked = !!S.done[k];
   cb.onchange = () => { S.done[k] = cb.checked; save(); };
   const r = el("div", { class: "row" }, [el("label", {}, [cb, el("span", { text: name })])]);
-  const q = qtyOf(k);
-  const qb = el("button", { class: "qty", "aria-label": "Aantal van " + name + ": " + q + ". Tik om te verhogen.", text: "×" + q });
-  qb.onclick = () => { S.qty[k] = q >= 4 ? 1 : q + 1; save(); renderList(); };
-  r.append(qb);
   if (isExtra) {
+    const q = S.qty[k] || 1;
+    const qb = el("button", { class: "qty", "aria-label": "Aantal van " + name + ": " + q + ". Tik om te verhogen.", text: "×" + q });
+    qb.onclick = () => { S.qty[k] = q >= 9 ? 1 : q + 1; save(); renderList(); };
     const rm = el("button", { class: "rm", "aria-label": name + " verwijderen", text: "×" });
     rm.onclick = () => { S.extras.splice(idx, 1); save(); renderList(); };
-    r.append(rm);
+    r.append(qb, rm);
   } else {
+    const [minus, plus] = qctl(name, n, "stp2");
+    r.append(el("div", { class: "qctl" }, [minus, el("span", { class: "qn", text: "×" + n.total }), plus]));
     const hv = el("button", { class: "have-btn", "aria-label": name + ": heb ik thuis", text: "thuis" });
     hv.onclick = () => { S.have[name] = true; save(); renderList(); renderBase(); };
     r.append(hv);
@@ -402,12 +466,12 @@ function row(name, isExtra, idx) {
 
 function renderManage() {
   const dl = document.getElementById("allitems"); dl.replaceChildren();
-  allItems().slice().sort(nlSort).forEach(i => dl.append(el("option", { value: i })));
+  Object.keys(S.items).sort(nlSort).forEach(i => dl.append(el("option", { value: i })));
 
   const chips = document.getElementById("dishchips"); chips.replaceChildren();
   S.dishes.forEach(d => {
-    const b = el("button", { class: "chip", "aria-pressed": editing === d.id, text: d.name });
-    b.onclick = () => { editing = editing === d.id ? null : d.id; renderManage(); if (editing) document.getElementById("editor").scrollIntoView({ block: "nearest" }); };
+    const b = el("button", { class: "chip", "aria-pressed": String(editing === d.id), text: d.name });
+    b.onclick = () => { editing = editing === d.id ? null : d.id; renderManage(); };
     chips.append(b);
   });
   const nb = el("button", { class: "chip", text: "+ Nieuw gerecht" });
@@ -428,13 +492,19 @@ function renderManage() {
   name.onchange = () => { d.name = name.value.trim() || d.name; save(); renderAll(); };
   ed.append(name);
 
-  ed.append(el("div", { class: "cap", text: "Ingrediënten (tik om te schrappen)" }));
-  const ic = el("div", { class: "chips" });
+  ed.append(el("div", { class: "cap", text: "Ingrediënten en aantal per keer dat je dit gerecht maakt" }));
+  const ic = el("div");
   if (!d.ing.length) ic.append(el("span", { class: "empty", text: "Nog geen ingrediënten." }));
   d.ing.slice().sort(nlSort).forEach(i => {
-    const b = el("button", { class: "chip", "aria-label": i + " schrappen uit " + d.name, text: i + "  ×" });
-    b.onclick = () => { d.ing = d.ing.filter(x => x !== i); save(); renderAll(); };
-    ic.append(b);
+    const q = dq(d, i);
+    const setQ = v => { d.qty = d.qty || {}; if (v <= 1) delete d.qty[i]; else d.qty[i] = v; save(); renderAll(); };
+    const minus = el("button", { class: "stp2", "aria-label": "Minder " + i, "aria-disabled": String(q <= 1), text: "−" });
+    const plus = el("button", { class: "stp2", "aria-label": "Meer " + i, text: "+" });
+    minus.onclick = () => { if (q > 1) setQ(q - 1); };
+    plus.onclick = () => setQ(Math.min(9, q + 1));
+    const rm = el("button", { class: "rm", "aria-label": i + " schrappen uit " + d.name, text: "×" });
+    rm.onclick = () => { d.ing = d.ing.filter(x => x !== i); if (d.qty) delete d.qty[i]; save(); renderAll(); };
+    ic.append(el("div", { class: "erow" }, [el("span", { text: i, style: "flex:1;min-width:110px" }), el("div", { class: "qctl" }, [minus, el("span", { class: "qn", text: "×" + q }), plus]), rm]));
   });
   ed.append(ic);
 
@@ -442,11 +512,11 @@ function renderManage() {
   const add = el("input", { type: "text", id: "eing", list: "allitems", placeholder: "bv. paprika", "aria-label": "Ingrediënt toevoegen", autocomplete: "off" });
   const catSel = el("select", { id: "ecat", "aria-label": "Afdeling voor nieuw product", style: "margin-top:8px;display:none" });
   catSel.append(el("option", { value: "", text: "Kies afdeling…" }));
-  catNames().forEach(c => catSel.append(el("option", { value: c, text: c })));
+  CAT_NAMES.forEach(c => catSel.append(el("option", { value: c, text: c })));
   const note = el("div", { class: "msg", id: "enote" });
   const sync = () => {
     const v = add.value.trim().toLowerCase();
-    const unknown = v && !allItems().includes(v);
+    const unknown = v && !(v in S.items);
     catSel.style.display = unknown ? "block" : "none";
     note.textContent = unknown ? "Nieuw product. Kies in welke afdeling het hoort." : "";
   };
@@ -454,9 +524,9 @@ function renderManage() {
   const doAdd = () => {
     const v = add.value.trim().toLowerCase();
     if (!v) return;
-    if (!allItems().includes(v)) {
+    if (!(v in S.items)) {
       if (!catSel.value) { note.textContent = "Kies eerst een afdeling voor dit nieuwe product."; catSel.focus(); return; }
-      S.custom[v] = catSel.value;
+      S.items[v] = catSel.value;
     }
     if (!d.ing.includes(v)) d.ing.push(v);
     save(); renderAll();
@@ -482,22 +552,45 @@ function renderManage() {
   box.append(ed);
 }
 
-function renderCustom() {
-  const box = document.getElementById("customlist"); box.replaceChildren();
-  const names = Object.keys(S.custom);
-  if (!names.length) { box.append(el("p", { class: "empty", text: "Nog geen eigen producten." })); return; }
-  names.forEach(n => {
-    const sel = el("select", { "aria-label": "Afdeling van " + n });
-    catNames().forEach(c => sel.append(el("option", { value: c, text: c })));
-    sel.value = S.custom[n];
-    sel.onchange = () => { S.custom[n] = sel.value; save(); renderAll(); };
-    const rm = el("button", { class: "btn danger", "aria-label": n + " verwijderen", text: "Verwijderen" });
-    rm.onclick = () => {
-      if (!confirm("“" + n + "” verwijderen uit je producten en gerechten?")) return;
-      delete S.custom[n]; S.dishes.forEach(d => { d.ing = d.ing.filter(x => x !== n); });
-      delete S.base[n]; delete S.have[n]; save(); renderAll();
-    };
-    box.append(el("div", { class: "crow" }, [el("span", { text: n, style: "flex:1;min-width:110px" }), sel, rm]));
+// Algemene ingrediëntenlijst: naam, afdeling, verwijderen
+function renameItem(old, raw) {
+  const nw = raw.trim().toLowerCase();
+  if (!nw || nw === old) { renderItems(); return; }
+  if (nw in S.items) { say("imsg", "“" + nw + "” bestaat al."); renderItems(); return; }
+  S.items[nw] = S.items[old]; delete S.items[old];
+  S.dishes.forEach(d => {
+    d.ing = d.ing.map(x => x === old ? nw : x);
+    if (d.qty && old in d.qty) { d.qty[nw] = d.qty[old]; delete d.qty[old]; }
+  });
+  ["base","have","adj","done"].forEach(k => { if (old in S[k]) { S[k][nw] = S[k][old]; delete S[k][old]; } });
+  save(); renderAll(); say("imsg", "Hernoemd naar “" + nw + "”.");
+}
+function deleteItem(n) {
+  if (!confirm("“" + n + "” verwijderen uit je ingrediënten en uit alle gerechten?")) return;
+  delete S.items[n];
+  S.dishes.forEach(d => { d.ing = d.ing.filter(x => x !== n); if (d.qty) delete d.qty[n]; });
+  ["base","have","adj","done"].forEach(k => { delete S[k][n]; });
+  save(); renderAll(); say("imsg", "“" + n + "” is verwijderd.");
+}
+function renderItems() {
+  const box = document.getElementById("itemlist"); box.replaceChildren();
+  CAT_NAMES.forEach(cat => {
+    const names = catItems(cat);
+    const det = el("details", {}, [el("summary", { text: cat + " (" + names.length + ")" })]);
+    names.forEach(n => {
+      const inp = el("input", { type: "text", value: n, "aria-label": "Naam van " + n });
+      inp.onchange = () => renameItem(n, inp.value);
+      const sel = el("select", { "aria-label": "Afdeling van " + n });
+      CAT_NAMES.forEach(c => sel.append(el("option", { value: c, text: c })));
+      sel.value = cat;
+      sel.onchange = () => { S.items[n] = sel.value; save(); renderAll(); };
+      const rm = el("button", { class: "rm", "aria-label": n + " verwijderen", text: "×" });
+      rm.onclick = () => deleteItem(n);
+      det.append(el("div", { class: "irow" }, [inp, sel, rm]));
+    });
+    det.open = openCats.has(cat);
+    det.addEventListener("toggle", () => { if (det.open) openCats.add(cat); else openCats.delete(cat); });
+    box.append(det);
   });
 }
 
@@ -512,7 +605,7 @@ function renderHistory() {
   });
 }
 
-function renderAll() { renderPlan(); renderBase(); renderOverview(); renderList(); renderManage(); renderCustom(); renderHistory(); }
+function renderAll() { renderPlan(); renderBase(); renderOverview(); renderList(); renderManage(); renderItems(); renderHistory(); }
 
 // Tekst om te delen (WhatsApp-opmaak)
 function buildText() {
@@ -523,15 +616,15 @@ function buildText() {
     DAYS.forEach(d => { if (S.plan[d]) L.push(d + ": " + planLabel(S.plan[d])); });
   }
   L.push("", "*Winkellijst*");
-  const wset = new Set([...wantedAll()].filter(i => !S.have[i]));
-  catNames().forEach(cat => {
-    const picked = catItems(cat).filter(i => wset.has(i) && !S.done[i]);
+  const N = needs();
+  CAT_NAMES.forEach(cat => {
+    const picked = catItems(cat).filter(i => N[i] && !S.have[i] && !S.done[i]);
     if (!picked.length) return;
     L.push("", "_" + cat + "_");
-    picked.forEach(i => L.push("- " + i + (qtyOf(i) > 1 ? " ×" + qtyOf(i) : "")));
+    picked.forEach(i => L.push("- " + i + (N[i].total > 1 ? " ×" + N[i].total : "")));
   });
   const ex = S.extras.filter(e => !S.done["x:" + e]);
-  if (ex.length) { L.push("", "_Extra_"); ex.forEach(e => L.push("- " + e + (qtyOf("x:" + e) > 1 ? " ×" + qtyOf("x:" + e) : ""))); }
+  if (ex.length) { L.push("", "_Extra_"); ex.forEach(e => { const q = S.qty["x:" + e] || 1; L.push("- " + e + (q > 1 ? " ×" + q : "")); }); }
   return L.join("\n");
 }
 async function copyText(text) {
@@ -541,7 +634,6 @@ async function copyText(text) {
     const ok = document.execCommand("copy"); t.remove(); return ok;
   } catch (e) { return false; }
 }
-const say = (id, msg) => { document.getElementById(id).textContent = msg; };
 
 document.getElementById("share").onclick = async () => {
   const text = buildText();
@@ -552,6 +644,23 @@ document.getElementById("share").onclick = async () => {
 };
 document.getElementById("copy").onclick = async () => {
   say("smsg", (await copyText(buildText())) ? "Lijst gekopieerd. Plak ze in WhatsApp of een bericht." : "Kopiëren lukte niet. Probeer “Delen”.");
+};
+
+// Enkel het weekmenu delen (zonder boodschappenlijst)
+function buildMenuText() {
+  const L = ["*Menu, week van " + fmtDate(S.date) + "*", ""];
+  DAYS.forEach(d => L.push(d + ": " + (planLabel(S.plan[d]) || "nog niet bepaald")));
+  return L.join("\n");
+}
+document.getElementById("shareMenu").onclick = async () => {
+  const text = buildMenuText();
+  if (navigator.share) {
+    try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
+};
+document.getElementById("copyMenu").onclick = async () => {
+  say("mmsg", (await copyText(buildMenuText())) ? "Menu gekopieerd. Plak het in WhatsApp of een bericht." : "Kopiëren lukte niet. Probeer “Menu delen”.");
 };
 
 function addExtra() {
@@ -573,13 +682,30 @@ document.getElementById("reset").onclick = () => {
     const snap = {}; DAYS.forEach(d => { if (S.plan[d]) snap[d] = planLabel(S.plan[d]); });
     S.history.push({ date: S.date, plan: snap }); S.history = S.history.slice(-52);
   }
-  S.plan = {}; S.base = {}; S.qty = {}; S.done = {}; S.have = {}; S.extras = []; S.date = todayISO();
+  S.plan = {}; S.base = {}; S.qty = {}; S.adj = {}; S.done = {}; S.have = {}; S.extras = []; S.date = todayISO();
   dateInp.value = S.date; save(); renderAll();
 };
 
+// Ingrediënt toevoegen vanuit de ingrediëntenlijst
+const icat = document.getElementById("icat");
+icat.append(el("option", { value: "", text: "Kies afdeling…" }));
+CAT_NAMES.forEach(c => icat.append(el("option", { value: c, text: c })));
+document.getElementById("iadd").onclick = () => {
+  const inp = document.getElementById("inew");
+  const v = inp.value.trim().toLowerCase();
+  if (!v) return;
+  if (v in S.items) { say("imsg", "“" + v + "” staat er al."); return; }
+  if (!icat.value) { say("imsg", "Kies eerst een afdeling."); icat.focus(); return; }
+  S.items[v] = icat.value; openCats.add(icat.value);
+  inp.value = ""; save(); renderAll();
+  say("imsg", "“" + v + "” toegevoegd aan " + S.items[v] + ".");
+};
+document.getElementById("inew").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("iadd").click(); });
+
+// Back-up
 document.getElementById("bmake").onclick = async () => {
   const ta = document.getElementById("bk");
-  ta.value = JSON.stringify({ v: 3, dishes: S.dishes, custom: S.custom, history: S.history });
+  ta.value = JSON.stringify({ v: 4, dishes: S.dishes, items: S.items, history: S.history });
   const ok = await copyText(ta.value);
   if (!ok) ta.select();
   say("bmsg", ok ? "Back-up gekopieerd. Plak ze ergens veilig." : "Selecteer de tekst hierboven en kopieer ze zelf.");
@@ -589,27 +715,33 @@ document.getElementById("brestore").onclick = () => {
   try {
     const b = JSON.parse(ta.value);
     if (!b || !Array.isArray(b.dishes) || !b.dishes.every(d => d && d.id && d.name && Array.isArray(d.ing))) throw 0;
-    if (!confirm("Je gerechten en vorige weken worden vervangen door de back-up. Doorgaan?")) return;
-    S.dishes = b.dishes; S.custom = b.custom || {}; S.history = Array.isArray(b.history) ? b.history : [];
+    if (!confirm("Je gerechten, ingrediënten en vorige weken worden vervangen door de back-up. Doorgaan?")) return;
+    const dishes = b.dishes.map(d => ({ id: d.id, name: d.name, ing: d.ing.filter(x => typeof x === "string"), qty: d.qty && typeof d.qty === "object" ? d.qty : undefined }));
+    let items = (b.items && typeof b.items === "object") ? b.items : Object.assign(clone(S.items), b.custom || {});
+    items = Object.fromEntries(Object.entries(items).map(([k, c]) => [k, CAT_NAMES.includes(c) ? c : "Snacks & rest"]));
+    dishes.forEach(d => d.ing.forEach(i => { if (!(i in items)) items[i] = "Snacks & rest"; }));
+    S.dishes = dishes; S.items = items; S.history = Array.isArray(b.history) ? b.history : [];
     Object.keys(S.plan).forEach(day => { const v = S.plan[day]; if (!v.startsWith("o:") && !dishById(v)) delete S.plan[day]; });
     editing = null; save(); renderAll();
     say("bmsg", "Hersteld.");
   } catch (e) { say("bmsg", "Dit lijkt geen geldige back-up. Plak de volledige tekst opnieuw."); }
 };
+
+// Product toevoegen in stap 2 (wordt meteen aangevinkt)
 const np = document.getElementById("np"), npc = document.getElementById("npc");
 npc.append(el("option", { value: "", text: "Kies afdeling…" }));
-catNames().forEach(c => npc.append(el("option", { value: c, text: c })));
+CAT_NAMES.forEach(c => npc.append(el("option", { value: c, text: c })));
 np.oninput = () => {
   const v = np.value.trim().toLowerCase();
-  npc.hidden = !(v && !allItems().includes(v));
+  npc.hidden = !(v && !(v in S.items));
   say("npmsg", npc.hidden ? "" : "Nieuw product. Kies in welke afdeling het hoort.");
 };
 document.getElementById("npadd").onclick = () => {
   const v = np.value.trim().toLowerCase();
   if (!v) return;
-  if (!allItems().includes(v)) {
+  if (!(v in S.items)) {
     if (!npc.value) { say("npmsg", "Kies eerst een afdeling voor dit nieuwe product."); npc.hidden = false; npc.focus(); return; }
-    S.custom[v] = npc.value;
+    S.items[v] = npc.value;
   }
   S.base[v] = true; delete S.have[v];
   np.value = ""; npc.value = ""; npc.hidden = true;
