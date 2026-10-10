@@ -102,6 +102,10 @@ details { margin: 4px 0; }
 summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px; display: flex; align-items: center; }
 .ed { margin-top: 14px; padding: 10px 0 10px 14px; border-left: 4px solid var(--ink); }
 .ed .cap { font-weight: 700; color: var(--ink-soft); font-size: 15px; margin: 10px 0 4px; }
+.addrow { flex-wrap: wrap; }
+.addrow input { min-width: 150px; }
+.addrow select, .crow select { font: inherit; min-height: 42px; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--rule); background: var(--paper); color: var(--text); }
+.crow { display: flex; gap: 8px; align-items: center; margin: 6px 0; flex-wrap: wrap; }
 .msg { color: var(--ink-soft); font-size: 15px; min-height: 24px; margin: 6px 0; }
 .check { display: flex; align-items: center; gap: 8px; font-size: 15px; }
 .check input { width: 20px; height: 20px; accent-color: var(--ink); }
@@ -146,6 +150,14 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
     <h2>2. Vaste basis</h2>
     <p class="hint">Tik aan wat je deze week nodig hebt. Lichtblauw = zit al in een gerecht dat je koos.</p>
     <div id="base"></div>
+    <h3>Product toevoegen</h3>
+    <p class="hint">Staat iets er niet bij? Voeg het hier toe. Het wordt meteen aangevinkt en blijft daarna in de lijst staan.</p>
+    <div class="addrow">
+      <input id="np" type="text" list="allitems" placeholder="bv. strooikaas" aria-label="Nieuw product" autocomplete="off">
+      <select id="npc" aria-label="Afdeling voor nieuw product" hidden></select>
+      <button class="btn" id="npadd">Toevoegen</button>
+    </div>
+    <div class="msg" id="npmsg" role="status"></div>
   </section>
 
   <section id="step3">
@@ -177,6 +189,9 @@ summary { cursor: pointer; font-weight: 700; color: var(--ink); min-height: 40px
     <p class="hint">Tik een gerecht aan om de ingrediënten aan te passen, of maak een nieuw gerecht.</p>
     <div class="chips" id="dishchips"></div>
     <div id="editor"></div>
+    <h3>Eigen producten</h3>
+    <p class="hint">Producten die je zelf toevoegde. Je kan de afdeling wijzigen, zodat ze op de juiste plek in de winkellijst staan.</p>
+    <div id="customlist"></div>
     <datalist id="allitems"></datalist>
   </section>
 
@@ -265,7 +280,8 @@ let editing = null;
 const fmtDate = iso => { try { return new Date(iso + "T12:00:00").toLocaleDateString("nl-BE", { day: "numeric", month: "long" }); } catch (e) { return iso; } };
 const dishById = id => S.dishes.find(d => d.id === id);
 const planLabel = v => !v ? "" : v.startsWith("o:") ? v.slice(2) : (dishById(v) ? dishById(v).name : "");
-const catItems = cat => [...BASE_CATS.find(c => c[0] === cat)[1], ...Object.keys(S.custom).filter(k => S.custom[k] === cat)];
+const nlSort = (a, b) => a.localeCompare(b, "nl");
+const catItems = cat => [...BASE_CATS.find(c => c[0] === cat)[1], ...Object.keys(S.custom).filter(k => S.custom[k] === cat)].sort(nlSort);
 const catNames = () => BASE_CATS.map(c => c[0]);
 const allItems = () => catNames().flatMap(catItems);
 const fromDish = () => {
@@ -386,7 +402,7 @@ function row(name, isExtra, idx) {
 
 function renderManage() {
   const dl = document.getElementById("allitems"); dl.replaceChildren();
-  allItems().forEach(i => dl.append(el("option", { value: i })));
+  allItems().slice().sort(nlSort).forEach(i => dl.append(el("option", { value: i })));
 
   const chips = document.getElementById("dishchips"); chips.replaceChildren();
   S.dishes.forEach(d => {
@@ -415,7 +431,7 @@ function renderManage() {
   ed.append(el("div", { class: "cap", text: "Ingrediënten (tik om te schrappen)" }));
   const ic = el("div", { class: "chips" });
   if (!d.ing.length) ic.append(el("span", { class: "empty", text: "Nog geen ingrediënten." }));
-  d.ing.forEach(i => {
+  d.ing.slice().sort(nlSort).forEach(i => {
     const b = el("button", { class: "chip", "aria-label": i + " schrappen uit " + d.name, text: i + "  ×" });
     b.onclick = () => { d.ing = d.ing.filter(x => x !== i); save(); renderAll(); };
     ic.append(b);
@@ -425,6 +441,7 @@ function renderManage() {
   ed.append(el("div", { class: "cap", text: "Ingrediënt toevoegen" }));
   const add = el("input", { type: "text", id: "eing", list: "allitems", placeholder: "bv. paprika", "aria-label": "Ingrediënt toevoegen", autocomplete: "off" });
   const catSel = el("select", { id: "ecat", "aria-label": "Afdeling voor nieuw product", style: "margin-top:8px;display:none" });
+  catSel.append(el("option", { value: "", text: "Kies afdeling…" }));
   catNames().forEach(c => catSel.append(el("option", { value: c, text: c })));
   const note = el("div", { class: "msg", id: "enote" });
   const sync = () => {
@@ -437,7 +454,10 @@ function renderManage() {
   const doAdd = () => {
     const v = add.value.trim().toLowerCase();
     if (!v) return;
-    if (!allItems().includes(v)) S.custom[v] = catSel.value;
+    if (!allItems().includes(v)) {
+      if (!catSel.value) { note.textContent = "Kies eerst een afdeling voor dit nieuwe product."; catSel.focus(); return; }
+      S.custom[v] = catSel.value;
+    }
     if (!d.ing.includes(v)) d.ing.push(v);
     save(); renderAll();
     const again = document.getElementById("eing"); if (again) again.focus();
@@ -462,6 +482,25 @@ function renderManage() {
   box.append(ed);
 }
 
+function renderCustom() {
+  const box = document.getElementById("customlist"); box.replaceChildren();
+  const names = Object.keys(S.custom);
+  if (!names.length) { box.append(el("p", { class: "empty", text: "Nog geen eigen producten." })); return; }
+  names.forEach(n => {
+    const sel = el("select", { "aria-label": "Afdeling van " + n });
+    catNames().forEach(c => sel.append(el("option", { value: c, text: c })));
+    sel.value = S.custom[n];
+    sel.onchange = () => { S.custom[n] = sel.value; save(); renderAll(); };
+    const rm = el("button", { class: "btn danger", "aria-label": n + " verwijderen", text: "Verwijderen" });
+    rm.onclick = () => {
+      if (!confirm("“" + n + "” verwijderen uit je producten en gerechten?")) return;
+      delete S.custom[n]; S.dishes.forEach(d => { d.ing = d.ing.filter(x => x !== n); });
+      delete S.base[n]; delete S.have[n]; save(); renderAll();
+    };
+    box.append(el("div", { class: "crow" }, [el("span", { text: n, style: "flex:1;min-width:110px" }), sel, rm]));
+  });
+}
+
 function renderHistory() {
   const box = document.getElementById("histlist"); box.replaceChildren();
   if (!S.history.length) { box.append(el("p", { class: "empty", text: "Nog geen bewaarde weken." })); return; }
@@ -473,7 +512,7 @@ function renderHistory() {
   });
 }
 
-function renderAll() { renderPlan(); renderBase(); renderOverview(); renderList(); renderManage(); renderHistory(); }
+function renderAll() { renderPlan(); renderBase(); renderOverview(); renderList(); renderManage(); renderCustom(); renderHistory(); }
 
 // Tekst om te delen (WhatsApp-opmaak)
 function buildText() {
@@ -557,6 +596,27 @@ document.getElementById("brestore").onclick = () => {
     say("bmsg", "Hersteld.");
   } catch (e) { say("bmsg", "Dit lijkt geen geldige back-up. Plak de volledige tekst opnieuw."); }
 };
+const np = document.getElementById("np"), npc = document.getElementById("npc");
+npc.append(el("option", { value: "", text: "Kies afdeling…" }));
+catNames().forEach(c => npc.append(el("option", { value: c, text: c })));
+np.oninput = () => {
+  const v = np.value.trim().toLowerCase();
+  npc.hidden = !(v && !allItems().includes(v));
+  say("npmsg", npc.hidden ? "" : "Nieuw product. Kies in welke afdeling het hoort.");
+};
+document.getElementById("npadd").onclick = () => {
+  const v = np.value.trim().toLowerCase();
+  if (!v) return;
+  if (!allItems().includes(v)) {
+    if (!npc.value) { say("npmsg", "Kies eerst een afdeling voor dit nieuwe product."); npc.hidden = false; npc.focus(); return; }
+    S.custom[v] = npc.value;
+  }
+  S.base[v] = true; delete S.have[v];
+  np.value = ""; npc.value = ""; npc.hidden = true;
+  save(); renderAll();
+  say("npmsg", "“" + v + "” staat nu op je lijst.");
+};
+np.addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("npadd").click(); });
 renderAll();
 </script>
 </body>
